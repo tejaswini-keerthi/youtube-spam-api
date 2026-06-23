@@ -1,24 +1,16 @@
 from pathlib import Path
 from typing import List
-
 import joblib
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-app = FastAPI(
-    title="YouTube Spam Classifier",
-    description="Classifies YouTube comments as spam or ham using TF-IDF + Logistic Regression.",
-    version="1.0.0",
-)
-app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
-)
+app = FastAPI(title="YouTube Spam Classifier", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 MODEL_DIR = Path("model")
 tfidf = None
 clf   = None
-
 
 @app.on_event("startup")
 def load_model():
@@ -26,7 +18,6 @@ def load_model():
     tfidf = joblib.load(MODEL_DIR / "tfidf.pkl")
     clf   = joblib.load(MODEL_DIR / "classifier.pkl")
     print("Model loaded.")
-
 
 class CommentRequest(BaseModel):
     comment: str = Field(..., min_length=1,
@@ -45,7 +36,6 @@ class BatchRequest(BaseModel):
 class BatchResponse(BaseModel):
     results: List[PredictionResponse]
 
-
 def _classify(comment: str) -> PredictionResponse:
     vec   = tfidf.transform([comment])
     pred  = int(clf.predict(vec)[0])
@@ -57,7 +47,6 @@ def _classify(comment: str) -> PredictionResponse:
         spam_probability=float(proba[1]),
         ham_probability=float(proba[0]),
     )
-
 
 @app.get("/")
 def root():
