@@ -1,30 +1,24 @@
-FROM continuumio/miniconda3:latest
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install scikit-learn, numpy, pandas via conda.
-# conda ALWAYS uses pre-built binaries — it never compiles from source,
-# so the numpy==2.0.0rc1 build-dependency error is impossible here.
-RUN conda install -y -c conda-forge \
-        python=3.11 \
-        scikit-learn=1.3.2 \
-        numpy=1.26.4 \
-        pandas=2.1.4 \
-        requests \
-    && conda clean -afy
+RUN apt-get update && apt-get install -y --no-install-recommends gcc g++ \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install web framework packages via pip
-RUN pip install --no-cache-dir \
-        fastapi==0.111.0 \
-        "uvicorn[standard]==0.29.0" \
-        pydantic==2.7.1 \
-        joblib==1.3.2
+RUN pip install --upgrade pip \
+    && pip install "Cython<3.0.0" "numpy==1.26.4"
 
-# Copy source code
+RUN pip install --no-build-isolation "scikit-learn==1.3.2"
+
+RUN pip install \
+    "pandas==2.1.4" \
+    "joblib==1.3.2" \
+    "requests==2.31.0" \
+    "fastapi==0.111.0" \
+    "uvicorn[standard]==0.29.0" \
+    "pydantic==2.7.1"
+
 COPY . .
-
-# Download dataset and train the model during the build
 RUN python train.py
 
-# Start the API ($PORT is provided by Render at runtime)
 CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-10000}
