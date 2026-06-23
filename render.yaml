@@ -1,13 +1,6 @@
 services:
   - type: web
     name: youtube-spam-api
-    env: python
+    env: docker
     plan: free
-    buildCommand: >
-      pip install --upgrade pip &&
-      pip install --only-binary=numpy numpy==1.26.4 &&
-      pip install --only-binary=scikit-learn scikit-learn==1.4.2 &&
-      pip install -r requirements.txt &&
-      python train.py
-    startCommand: "uvicorn app:app --host 0.0.0.0 --port $PORT"
     healthCheckPath: /health
